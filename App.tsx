@@ -37,31 +37,94 @@ import {
   AlertCircle,
   Lightbulb,
   MessageSquarePlus,
-  Rocket
+  Rocket,
+  ArrowUp
 } from 'lucide-react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
-const MilestonePin = ({ label, m, category, side }: { label: string, m: number, category: 'cx' | 'design' | 'qc', side: 'top' | 'bottom' }) => {
-  const colors = {
-    cx: 'bg-blue-600',
-    design: 'bg-indigo-600',
-    qc: 'bg-zinc-600'
+const CascadingBar = ({ label, start, end, category, index }: { label: string, start: number, end: number, category: 'poc' | 'cx' | 'design' | 'qc', index: number }) => {
+  const baseColors = {
+    poc: 'bg-orange-500',
+    cx: 'bg-blue-500',
+    design: 'bg-violet-500',
+    qc: 'bg-slate-500'
+  };
+
+  const left = `${(start / 10) * 100}%`;
+  const width = `${((end - start) / 10) * 100}%`;
+
+  return (
+    <div className="relative w-full h-16 flex items-center">
+      <motion.div
+        initial={{ width: 0, opacity: 0 }}
+        whileInView={{ width: width, opacity: 1 }}
+        transition={{ duration: 0.8, delay: index * 0.1, ease: "easeOut" }}
+        className={`absolute h-10 ${baseColors[category]} rounded-lg shadow-sm border border-white/20 flex items-center px-4 z-20 overflow-hidden`}
+        style={{ left }}
+      >
+        <span className="text-base font-black text-white whitespace-nowrap drop-shadow-sm">
+          {label}
+        </span>
+      </motion.div>
+    </div>
+  );
+};
+
+const ConnectionArrow = ({ startCol, endCol, rowFrom }: { startCol: number, endCol: number, rowFrom: number }) => {
+  const startX = `${(startCol / 10) * 100}%`;
+  const endX = `${(endCol / 10) * 100}%`;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-10" style={{ top: `${rowFrom * 64 + 32}px`, height: '64px' }}>
+      <svg className="w-full h-full overflow-visible">
+        <motion.path
+          d={`M ${startX} 8 L ${startX} 32 L ${endX} 32 L ${endX} 40`}
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray="4 4"
+          fill="none"
+          className="text-zinc-300"
+          initial={{ pathLength: 0, opacity: 0 }}
+          whileInView={{ pathLength: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+        />
+        <motion.path
+          d={`M ${endX} 40 l -3 -5 l 6 0 z`}
+          className="text-zinc-300 fill-current"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ delay: 1.3 }}
+        />
+      </svg>
+    </div>
+  );
+};
+
+const ScrollToTop = () => {
+  const { scrollYProgress } = useScroll();
+  const [isVisible, setIsVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    return scrollYProgress.on('change', (latest) => {
+      setIsVisible(latest > 0.05);
+    });
+  }, [scrollYProgress]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: side === 'top' ? 20 : -20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: m * 0.1 }}
-      className={`absolute flex flex-col items-center group`}
-      style={{ left: `${(m / 10) * 100}%`, transform: 'translateX(-50%)', [side === 'top' ? 'bottom' : 'top']: '24px' }}
+    <motion.button
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.8, pointerEvents: isVisible ? 'auto' : 'none' }}
+      transition={{ duration: 0.3 }}
+      onClick={scrollToTop}
+      className="fixed bottom-8 right-8 z-50 p-4 bg-zinc-900 text-white rounded-full shadow-lg hover:bg-zinc-800 hover:scale-110 transition-colors group"
+      aria-label="Scroll to top"
     >
-      <div className={`p-3 bg-white border-2 border-zinc-200 rounded-2xl shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all max-w-[160px] text-center mb-2 z-20`}>
-        <span className="text-xs font-bold text-zinc-800 leading-tight keep-all block">{label}</span>
-      </div>
-      <div className={`w-3 h-3 rounded-full ${colors[category]} border-2 border-white shadow-sm relative z-30`} />
-      <div className={`w-0.5 h-6 bg-zinc-200 group-hover:bg-blue-200 transition-colors absolute ${side === 'top' ? 'top-full mt-[-6px]' : 'bottom-full mb-[-6px]'}`} />
-    </motion.div>
+      <ArrowUp size={24} className="group-hover:-translate-y-1 transition-transform" />
+    </motion.button>
   );
 };
 
@@ -76,18 +139,11 @@ const App: React.FC = () => {
   const navItems = [
     { id: 'vision', label: '1. 사업 이해' },
     { id: 'roles', label: '2. 역할 및 범위' },
-    { id: 'timeline', label: '2.4 참여 범위 요약' },
-    { id: 'experience', label: '3. 유사 경험' },
+    { id: 'experience', label: '3. 유사 업무 참여 경험' },
     { id: 'collaboration', label: '4. 협업 방안' },
-    { id: 'process', label: '4.2 협업 프로세스' },
     { id: 'requests', label: '5. 제언/요청사항' },
-    { id: 'meaning', label: '요구사항 의미' },
-    { id: 'rulebased', label: '룰 베이스란?' },
-    { id: 'elements', label: '필수 4요소' },
-    { id: 'why', label: '작성 이유' },
-    { id: 'examples', label: '예시 비교' },
-    { id: 'checklist', label: '체크리스트' },
-    { id: 'conclusion', label: '결론' },
+    { id: 'rulebased', label: '[#별첨1] 룰베이스 기획(안)' },
+    { id: 'examples', label: '[#별첨2] 룰베이스 기획 예시' },
   ];
 
   const scrollToSection = (id: string) => {
@@ -105,6 +161,9 @@ const App: React.FC = () => {
         style={{ scaleX }}
       />
 
+      {/* Scroll To Top Button */}
+      <ScrollToTop />
+
       {/* LNB */}
       <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col gap-3 p-4 bg-zinc-900/5 backdrop-blur-sm rounded-2xl border border-zinc-200/50">
         {navItems.map((item) => (
@@ -114,15 +173,98 @@ const App: React.FC = () => {
             className="group flex items-center gap-3 text-left transition-all"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 group-hover:bg-blue-600 group-hover:scale-150 transition-all" />
-            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-900 transition-all whitespace-nowrap">
+            <span className="text-base font-medium text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-900 transition-all whitespace-nowrap">
               {item.label}
             </span>
           </button>
         ))}
       </nav>
 
-      {/* Slide 0: 1. Project Understanding */}
-      <ParallaxSlide id="vision" isFirst={true}>
+      {/* Slide 0: Cover */}
+      <ParallaxSlide id="cover" isFirst={true}>
+        <div className="flex flex-col h-full justify-center items-center text-center py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-8"
+          >
+            <div className="flex items-center justify-center gap-6 mb-12">
+              <div className="text-2xl font-black tracking-widest text-zinc-400">IBK</div>
+              <div className="w-px h-8 bg-zinc-200" />
+              <div className="text-2xl font-black tracking-widest text-zinc-400">SDS</div>
+              <div className="w-px h-8 bg-zinc-200" />
+              <div className="text-2xl font-black tracking-widest text-zinc-400 text-red-600">ETRIBE</div>
+            </div>
+
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none keep-all">
+              AI-Driven<br />
+              Workflow
+            </h1>
+
+            <p className="text-2xl md:text-3xl font-light text-zinc-500 tracking-tight mt-12">
+              생산성·효율성 제고를 위한 AI 기반 워크 플로우
+            </p>
+
+            <div className="flex flex-col items-center mt-24">
+              <div className="px-8 py-3 bg-zinc-900 text-white rounded-full text-lg font-bold tracking-widest uppercase">
+                ETRIBE AX Center
+              </div>
+              <div className="mt-4 text-zinc-400 text-sm font-medium tracking-widest">
+                2026. 02. 12
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="absolute bottom-12 flex flex-col items-center gap-4 text-zinc-400">
+            <span className="text-sm font-bold uppercase tracking-widest">Scroll</span>
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <ArrowRight className="rotate-90" size={24} />
+            </motion.div>
+          </div>
+        </div>
+      </ParallaxSlide>
+
+      {/* Slide 1: Index (TOC) */}
+      <ParallaxSlide id="index">
+        <div className="flex flex-col h-full justify-center py-12">
+          <SectionTitle subtitle="CONTENTS">목차</SectionTitle>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-12 mt-12 ml-4">
+            {[
+              { num: '01', title: '사업 이해', sub: 'Project Vision & Technical Goals' },
+              { num: '02', title: '역할 및 범위', sub: 'Participation Scope & Responsibilities' },
+              { num: '03', title: '유사 업무 참여 경험', sub: 'Experience & Track Record' },
+              { num: '04', title: '협업 방안', sub: 'Collaboration Strategy & Roadmap' },
+              { num: '05', title: '제언/요청사항', sub: 'Strategic Requests & PoC Requirements' },
+              { num: '별첨', title: '룰 베이스 기획(안)', sub: 'Advanced Planning Methodology' },
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="flex items-start gap-8 group cursor-pointer"
+                onClick={() => scrollToSection(item.num === '별첨' ? 'rulebased' : navItems.find(n => n.label.includes(item.title))?.id || '')}
+              >
+                <div className="text-4xl font-black text-blue-600/20 group-hover:text-blue-600 transition-colors">
+                  {item.num}
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-3xl font-bold group-hover:translate-x-2 transition-transform">{item.title}</h3>
+                  <p className="text-lg text-zinc-400 font-medium group-hover:translate-x-2 transition-transform transition-delay-75 uppercase tracking-wider">{item.sub}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </ParallaxSlide>
+
+      {/* Slide 2: 1. Project Understanding */}
+      <ParallaxSlide id="vision">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">IBK Project Vision</span>
@@ -199,7 +341,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 gap-12 overflow-y-auto max-h-[60vh] pr-4">
             {/* 2.1 CX Planning */}
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold flex items-center gap-3 text-blue-700">
+              <h3 className="text-2xl font-bold flex items-center gap-3 text-blue-600">
                 <Layers size={24} /> 2.1 CX 기획
               </h3>
               <div className="overflow-hidden rounded-xl border border-zinc-200">
@@ -220,12 +362,12 @@ const App: React.FC = () => {
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">공통 컴포넌트 기획</td>
                       <td className="p-4 text-zinc-600 keep-all">컴포넌트 분석, 기능 정의, 사용 시나리오 작성</td>
-                      <td className="p-4 text-zinc-500 text-sm">개발자와 기획 단계부터 지속 논의</td>
+                      <td className="p-4 text-zinc-500 text-base">개발자와 기획 단계부터 지속 논의</td>
                     </tr>
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">화면 정의서 작성</td>
-                      <td className="p-4 text-zinc-600 keep-all">AI Pro SDD 입력 규격에 맞는 화면 정의서 작성<br />기존 화면 설계 외에 인수 조건(AC) 및 테스트 케이스 자연어 포함</td>
-                      <td className="p-4 text-zinc-500 text-sm">SDS AI Pro 팀과 사전 협의 필요</td>
+                      <td className="p-4 text-zinc-600 keep-all">AI Pro SDD 입력 규격에 맞는 화면 정의서 작성<br />테스트 시나리오 도출 최적화를 위한 룰베이스 기반 디스크립션 작성</td>
+                      <td className="p-4 text-zinc-500 text-base">SDS AI Pro 팀과 사전 협의 필요</td>
                     </tr>
                   </tbody>
                 </table>
@@ -234,7 +376,7 @@ const App: React.FC = () => {
 
             {/* 2.2 Design System */}
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold flex items-center gap-3 text-blue-700">
+              <h3 className="text-2xl font-bold flex items-center gap-3 text-violet-600">
                 <PencilRuler size={24} /> 2.2 디자인 시스템 설계 및 표준화
               </h3>
               <div className="overflow-hidden rounded-xl border border-zinc-200">
@@ -250,17 +392,17 @@ const App: React.FC = () => {
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">디자인 토큰 체계 설계</td>
                       <td className="p-4 text-zinc-600 keep-all">Color, Typography, Spacing, Elevation 등 토큰 정의 및 계층 구조 수립</td>
-                      <td className="p-4 text-zinc-500 text-sm">IBK 기존 디자인 표준 현황 확인 후 범위 확정 필요</td>
+                      <td className="p-4 text-zinc-500 text-base">IBK 기존 디자인 표준 현황 확인 후 범위 확정 필요</td>
                     </tr>
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">베리언트 설계</td>
                       <td className="p-4 text-zinc-600 keep-all">컴포넌트별 상태(State), 사이즈(Size), 테마(Theme) 베리언트 정의</td>
-                      <td className="p-4 text-zinc-500 text-sm">FiCA 매칭을 위한 규격 준수</td>
+                      <td className="p-4 text-zinc-500 text-base">FiCA 매칭을 위한 규격 준수</td>
                     </tr>
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">Figma 컴포넌트 라이브러리 구축</td>
                       <td className="p-4 text-zinc-600 keep-all">공통 UI 컴포넌트의 Figma 설계 및 프로퍼티 정의</td>
-                      <td className="p-4 text-zinc-500 text-sm">개발팀과 지속 협의하며 진행</td>
+                      <td className="p-4 text-zinc-500 text-base">개발팀과 지속 협의하며 진행</td>
                     </tr>
                     <tr>
                       <td className="p-4 font-semibold text-zinc-800">CX 디자인</td>
@@ -270,11 +412,17 @@ const App: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <div className="mt-8 p-6 bg-zinc-900 text-white rounded-2xl shadow-xl border-l-[12px] border-violet-600 transform hover:scale-[1.02] transition-transform">
+                <p className="text-xl font-black tracking-tight flex items-center gap-4">
+                  <span className="w-2 h-2 bg-violet-600 rounded-full animate-pulse" />
+                  디자인 시스템 설계 사례는 별도 출력물을 통해 리뷰 예정
+                </p>
+              </div>
             </div>
 
             {/* 2.3 QC */}
             <div className="space-y-4">
-              <h3 className="text-2xl font-bold flex items-center gap-3 text-blue-700">
+              <h3 className="text-2xl font-bold flex items-center gap-3 text-slate-600">
                 <SearchCheck size={24} /> 2.3 퍼블리싱 검증 및 품질 관리
               </h3>
               <div className="overflow-hidden rounded-xl border border-zinc-200">
@@ -288,7 +436,7 @@ const App: React.FC = () => {
                   </thead>
                   <tbody className="divide-y divide-zinc-200 bg-white">
                     <tr>
-                      <td className="p-4 font-semibold text-zinc-800">FiCA 생성 코드 수정</td>
+                      <td className="p-4 font-semibold text-zinc-800">FiCA 생성 코드 Set up 및 변경</td>
                       <td className="p-4 text-zinc-600 keep-all">요구 사항에 따른 변경 내용을 수정 업데이트 후 FiCA 현행화 가이드 제공</td>
                       <td className="p-4"></td>
                     </tr>
@@ -308,97 +456,6 @@ const App: React.FC = () => {
           </div>
         </div>
       </ParallaxSlide>
-
-      {/* Slide 2: 2.4 Participation Scope Summary */}
-      <ParallaxSlide id="timeline">
-        <div className="flex flex-col h-full justify-center py-12">
-          <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
-            <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Timeline</span>
-            <span className="text-lg md:text-xl uppercase tracking-widest font-bold">Summary</span>
-          </div>
-
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-12 keep-all">
-            2.4 참여 범위 요약
-          </h1>
-
-          <div className="relative w-full max-w-6xl mx-auto mt-12 mb-20">
-            {/* Background Phase Lines */}
-            {[2, 4, 6, 8].map((m) => (
-              <div
-                key={m}
-                className="absolute top-0 bottom-0 border-l-2 border-dashed border-zinc-200 z-0 h-[400px]"
-                style={{ left: `${(m / 10) * 100}%` }}
-              >
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-black tracking-widest text-zinc-300 whitespace-nowrap">PHASE TRANSITION</span>
-              </div>
-            ))}
-
-            {/* Central Axis Arrow */}
-            <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-1.5 bg-zinc-200 rounded-full z-10 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: '100%' }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="h-full bg-blue-600"
-              />
-              <div className="absolute top-0 right-0 w-4 h-4 bg-blue-600 rotate-45 -translate-y-[6px] translate-x-[8px]" />
-            </div>
-
-            {/* Month Marks */}
-            <div className="absolute top-1/2 left-0 right-0 translate-y-4 flex justify-between px-0 z-20 font-mono text-xs font-bold text-zinc-400">
-              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
-                <div key={m} className={`flex flex-col items-center`}>
-                  <div className={`w-1 h-3 ${m % 2 === 0 ? 'bg-zinc-300' : 'bg-zinc-200'} mb-1`} />
-                  <span>M{m}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Content Area */}
-            <div className="relative h-[400px] w-full">
-              {/* Top Side: CX Planning & QC Shifted */}
-              <MilestonePin m={0.5} label="PoC 수행" category="cx" side="top" />
-              <MilestonePin m={1.5} label="컴포넌트 식별/분석" category="cx" side="top" />
-              <MilestonePin m={3.5} label="화면 정의서(AC)" category="cx" side="top" />
-              <MilestonePin m={5.5} label="유저 저니 적용" category="cx" side="top" />
-              <MilestonePin m={7.5} label="주요 화면 기획" category="cx" side="top" />
-              <MilestonePin m={9.5} label="시나리오 테스트" category="cx" side="top" />
-
-              <MilestonePin m={2} label="QA 기준 수립" category="qc" side="top" />
-              <MilestonePin m={4} label="코드 현행화" category="qc" side="top" />
-              <MilestonePin m={6} label="사용자 테스트" category="qc" side="top" />
-              <MilestonePin m={8} label="코드 정밀 검증" category="qc" side="top" />
-              <MilestonePin m={10} label="통합 품질 완료" category="qc" side="top" />
-
-              {/* Bottom Side: Design System */}
-              <MilestonePin m={1.5} label="토큰/파운데이션" category="design" side="bottom" />
-              <MilestonePin m={3.5} label="베리언트/Figma" category="design" side="bottom" />
-              <MilestonePin m={5.5} label="표준 디자인 완성" category="design" side="bottom" />
-              <MilestonePin m={7.5} label="글로벌 UI 확장" category="design" side="bottom" />
-              <MilestonePin m={9.5} label="가이드 최종 고도화" category="design" side="bottom" />
-            </div>
-
-            {/* Legend */}
-            <div className="mt-8 flex justify-center gap-12 text-sm font-bold opacity-60">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-600" /> CX 기획
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-indigo-600" /> 디자인 시스템
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-zinc-600" /> 검증 및 품질
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-12 animate-bounce text-zinc-400">
-            <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
-          </div>
-        </div>
-      </ParallaxSlide>
-
-      {/* Slide 3: 3. Similar Experience */}
       <ParallaxSlide id="experience">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
@@ -415,12 +472,10 @@ const App: React.FC = () => {
               <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
                 <History className="text-blue-600 group-hover:text-white" size={28} />
               </div>
-              <h3 className="text-2xl font-bold mb-4 keep-all leading-tight">3.1 SDS 오퍼스 기반 Figma 디자인 운영 (4년 이상)</h3>
+              <h3 className="text-2xl font-bold mb-4 keep-all leading-tight">3.1 디자인 시스템 구축 및 운영</h3>
               <ul className="space-y-3 text-zinc-600">
-                <li><span className="font-bold text-zinc-900">기간:</span> 2021년~현재 (4년 이상 지속)</li>
-                <li className="keep-all"><span className="font-bold text-zinc-900">내용:</span> SDS 본사와 오퍼스(원플랫폼) 기반 Figma 디자인 시스템 공동 구축 및 운영</li>
-                <li className="keep-all"><span className="font-bold text-zinc-900">성과:</span> Figma Developer 계정을 활용한 퍼블리싱 소스 자동 생성 체계 정착</li>
-                <li><span className="font-bold text-zinc-900">규모:</span> 기획/디자인 전 과정 수행</li>
+                <li className="keep-all"><span className="font-bold text-zinc-900">·</span> SDS OPUS(원플랫폼) 기반 Figma 디자인 시스템 공동 구축 및 운영 외 다수</li>
+                <li className="keep-all"><span className="font-bold text-zinc-900">·</span> Figma Developer 계정을 활용한 퍼블리싱 소스 자동 생성 체계 정착</li>
               </ul>
             </div>
 
@@ -456,10 +511,10 @@ const App: React.FC = () => {
             <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
           </div>
         </div>
-      </ParallaxSlide>
+      </ParallaxSlide >
 
       {/* Slide 4: 4. SDS Collaboration Plan (4.1) */}
-      <ParallaxSlide id="collaboration">
+      < ParallaxSlide id="collaboration" >
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Collaboration Strategy</span>
@@ -505,18 +560,18 @@ const App: React.FC = () => {
               <div className="bg-red-50 border border-red-100 rounded-3xl overflow-hidden shadow-sm flex flex-col">
                 <div className="bg-red-600 p-6 text-white flex items-center gap-3">
                   <PencilRuler size={24} />
-                  <h4 className="text-2xl font-black">eTribe 영역</h4>
+                  <h4 className="text-2xl font-black">ETRIBE 영역</h4>
                 </div>
                 <div className="p-8 flex-grow">
                   <ul className="space-y-4">
                     {[
-                      "디자인 시스템 설계",
+                      "CX 기획(AS-IS 분석/분류)",
                       "Figma 컴포넌트 라이브러리",
-                      "CX 기획(AS-IS 분석 분류)",
+                      "디자인 시스템 설계",
+                      "FiCA 규격에 맞춘 Figma 디자인",
                       "퍼블리싱 코드 검증 및 수정",
                       "접근성 표준 수립",
                       "코딩 컨벤션 수립/적용",
-                      "FiCA 규격에 맞춘 Figma 디자인"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-3 text-red-900">
                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-600 shrink-0"></span>
@@ -550,7 +605,7 @@ const App: React.FC = () => {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-10 p-4 bg-white/5 rounded-2xl text-purple-300 text-sm font-medium text-center italic">
+                  <div className="mt-10 p-4 bg-white/5 rounded-2xl text-purple-300 text-base font-medium text-center italic">
                     "실시간 싱크업을 통한 SDD 파이프라인 최적화"
                   </div>
                 </div>
@@ -562,117 +617,124 @@ const App: React.FC = () => {
             <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
           </div>
         </div>
-      </ParallaxSlide>
+      </ParallaxSlide >
 
       {/* Slide 5: 4.2 Collaboration Process */}
-      <ParallaxSlide id="process">
+      < ParallaxSlide id="process" >
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Roadmap</span>
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold">Chapter 04</span>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-10 keep-all">
-            4.2 협업 프로세스(안)
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight mb-12 keep-all">
+            4. SDS 협업 방안
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[70vh] pr-4 py-4">
+          <div className="flex flex-col gap-10">
+            <h3 className="text-2xl md:text-3xl font-bold flex items-center gap-3 text-zinc-700">
+              <Workflow size={32} className="text-blue-600" /> 4.2 협업 프로세스(안)
+            </h3>
 
-            {/* Phase 1 */}
-            <div className="relative p-8 bg-zinc-50 border border-zinc-200 rounded-3xl flex flex-col h-full hover:bg-white hover:shadow-2xl transition-all">
-              <div className="absolute top-6 right-8 text-blue-600 font-black text-4xl opacity-10">01</div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">
-                  <Milestone size={24} />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-blue-600 uppercase">M1 ~ M3</div>
-                  <h4 className="text-xl font-black">Phase 1: 표준 수립</h4>
-                </div>
-              </div>
-              <ul className="space-y-4 text-zinc-600 text-base flex-grow">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <p className="keep-all">IBK 기존 서비스 분석 및 주요 컴포넌트 및 유저 행동 분석</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <p className="keep-all">IBK 기존 디자인 표준 현황 파악 → 디자인 시스템 설계</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <p className="keep-all">SDS 개발팀과 컴포넌트 기획 협의 (기획 단계부터 개발자 참여)</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <p className="keep-all">SDS로부터 FiCA 룰 베이스 규칙 전달받아 Figma 작업 규격 확정</p>
-                </li>
-              </ul>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto max-h-[70vh] pr-4 py-4">
 
-            {/* Phase 2 */}
-            <div className="relative p-8 bg-zinc-50 border border-zinc-200 rounded-3xl flex flex-col h-full hover:bg-white hover:shadow-2xl transition-all">
-              <div className="absolute top-6 right-8 text-indigo-600 font-black text-4xl opacity-10">02</div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200">
-                  <Activity size={24} />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-indigo-600 uppercase">M3 ~ M6</div>
-                  <h4 className="text-xl font-black">Phase 2: 공통 구축</h4>
-                </div>
-              </div>
-              <ul className="space-y-4 text-zinc-600 text-base flex-grow">
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                  <p className="keep-all">디자인 토큰/베리언트 제작(eTribe) → 컴포넌트 개발(SDS) → FiCA 매칭(SDS)</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                  <p className="keep-all">eTribe는 FiCA 규격에 맞춘 Figma 디자인 납품, SDS는 룰 베이스 및 매칭 작업 수행</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                  <p className="keep-all">공통 컴포넌트 기획(eTribe)-개발(SDS)-검증(eTribe) 사이클 반복</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                  <p className="keep-all">FiCA 룰에 IBK 코딩컨벤션, 웹접근성 규칙 및 지침 이식 협업</p>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
-                  <p className="keep-all">1차 버전 완료 및 검증 / 테스트 방안 PoC 및 테스트</p>
-                </li>
-              </ul>
-            </div>
-
-            {/* Phase 3 */}
-            <div className="relative p-8 bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col h-full shadow-xl">
-              <div className="absolute top-6 right-8 text-white font-black text-4xl opacity-10">03</div>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-white text-zinc-900 rounded-xl shadow-lg">
-                  <CheckCircle2 size={24} />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-zinc-400 uppercase">M7 ~ M10</div>
-                  <h4 className="text-xl font-black text-white">Phase 3: 글로벌 적용</h4>
-                </div>
-              </div>
-              <div className="flex-grow flex flex-col justify-center">
-                <div className="p-6 bg-white/5 border border-white/10 rounded-2xl mb-4">
-                  <p className="text-zinc-300 keep-all">구축된 디자인 시스템 및 FiCA 자동화 파이프라인을 실제 글로벌 뱅킹 화면에 적용 및 확산하는 단계입니다.</p>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-blue-400 font-bold">
-                    <Zap size={16} />
-                    SDD 고도화 완료
+              {/* Phase 1 */}
+              <div className="relative p-8 bg-zinc-50 border border-zinc-200 rounded-3xl flex flex-col h-full hover:bg-white hover:shadow-2xl transition-all">
+                <div className="absolute top-6 right-8 text-blue-600 font-black text-4xl opacity-10">01</div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200">
+                    <Milestone size={24} />
                   </div>
-                  <div className="flex items-center gap-2 text-blue-400 font-bold">
-                    <Zap size={16} />
-                    글로벌 뱅킹 대규모 배포
+                  <div>
+                    <div className="text-base font-bold text-blue-600 uppercase">M1 ~ M3</div>
+                    <h4 className="text-xl font-black">Phase 1: 표준 수립</h4>
                   </div>
                 </div>
+                <ul className="space-y-4 text-zinc-600 text-base flex-grow">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                    <p className="keep-all">IBK 기존 서비스 분석 및 주요 컴포넌트 및 유저 행동 분석</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                    <p className="keep-all">IBK 기존 디자인 표준 현황 파악 → 디자인 시스템 설계</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                    <p className="keep-all">SDS 개발팀과 컴포넌트 기획 협의 (기획 단계부터 개발자 참여)</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                    <p className="keep-all">SDS로부터 FiCA 룰 베이스 규칙 전달받아 Figma 작업 규격 확정</p>
+                  </li>
+                </ul>
               </div>
+
+              {/* Phase 2 */}
+              <div className="relative p-8 bg-zinc-50 border border-zinc-200 rounded-3xl flex flex-col h-full hover:bg-white hover:shadow-2xl transition-all">
+                <div className="absolute top-6 right-8 text-indigo-600 font-black text-4xl opacity-10">02</div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200">
+                    <Activity size={24} />
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-indigo-600 uppercase">M3 ~ M6</div>
+                    <h4 className="text-xl font-black">Phase 2: 공통 구축</h4>
+                  </div>
+                </div>
+                <ul className="space-y-4 text-zinc-600 text-base flex-grow">
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <p className="keep-all">디자인 토큰/베리언트 제작(eTribe) → 컴포넌트 개발(SDS) → FiCA 매칭(SDS)</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <p className="keep-all">eTribe는 FiCA 규격에 맞춘 Figma 디자인 납품, SDS는 룰 베이스 및 매칭 작업 수행</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <p className="keep-all">공통 컴포넌트 기획(eTribe)-개발(SDS)-검증(eTribe) 사이클 반복</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <p className="keep-all">FiCA 룰에 IBK 코딩컨벤션, 웹접근성 규칙 및 지침 이식 협업</p>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0"></span>
+                    <p className="keep-all">1차 버전 완료 및 검증 / 테스트 방안 PoC 및 테스트</p>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Phase 3 */}
+              <div className="relative p-8 bg-zinc-900 border border-zinc-800 rounded-3xl flex flex-col h-full shadow-xl">
+                <div className="absolute top-6 right-8 text-white font-black text-4xl opacity-10">03</div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-white text-zinc-900 rounded-xl shadow-lg">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <div>
+                    <div className="text-base font-bold text-zinc-400 uppercase">M7 ~ M10</div>
+                    <h4 className="text-xl font-black text-white">Phase 3: 글로벌 적용</h4>
+                  </div>
+                </div>
+                <div className="flex-grow flex flex-col justify-center">
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl mb-4">
+                    <p className="text-zinc-300 keep-all">구축된 디자인 시스템 및 FiCA 자동화 파이프라인을 실제 글로벌 뱅킹 화면에 적용 및 확산하는 단계입니다.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-blue-400 font-bold">
+                      <Zap size={16} />
+                      SDD 고도화 완료
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-400 font-bold">
+                      <Zap size={16} />
+                      글로벌 뱅킹 대규모 배포
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
           </div>
@@ -681,10 +743,10 @@ const App: React.FC = () => {
             <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
           </div>
         </div>
-      </ParallaxSlide>
+      </ParallaxSlide >
 
       {/* Slide 6: 5. Suggestions and Requirements (NEW LOCATION) */}
-      <ParallaxSlide id="requests">
+      < ParallaxSlide id="requests" >
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Strategic Requests</span>
@@ -770,28 +832,28 @@ const App: React.FC = () => {
                       <td className="p-5 text-center font-bold text-zinc-900">생산성</td>
                       <td className="p-5 font-bold text-zinc-900 keep-all">FIGMA(디자인) 수정 내역 관리 피그마 플러그인 제공</td>
                       <td className="p-5 text-zinc-600 keep-all text-base">피그마 수정된 페이지 내역만 FiCA 로 전달 업데이트 하는 배치 구성. 변경 승인 워크플로우 생성 가능</td>
-                      <td className="p-5 text-zinc-500 text-sm italic keep-all font-mono">figma.on('documentchange', callback) 이벤트를 이용한 유사 플러그인 제작경험</td>
+                      <td className="p-5 text-zinc-500 text-base italic keep-all font-mono">figma.on('documentchange', callback) 이벤트를 이용한 유사 플러그인 제작경험</td>
                     </tr>
                     <tr>
                       <td className="p-5 text-center font-bold text-zinc-400">2</td>
                       <td className="p-5 text-center font-bold text-zinc-900">생산성 및 품질</td>
                       <td className="p-5 font-bold text-zinc-900 keep-all">FiCA 룰베이스 기반 디스크립션 자동완성 피그마 플러그인 제공</td>
-                      <td className="p-5 text-zinc-600 keep-all text-base">FiCA 룰 → Yaml 변환 → 피금마 플러그인 기반 제작. 오타 및 휴먼 에러 없는 데스크립션 작성 가능</td>
-                      <td className="p-5 text-zinc-500 text-sm italic keep-all">AI 연동 없이 작업 하거나 AI 연동 시 추천 등 제시 가능 *</td>
+                      <td className="p-5 text-zinc-600 keep-all text-base">FiCA 룰 → Yaml 변환 → 피그마 플러그인 기반 제작. 오타 및 휴먼 에러 없는 데스크립션 작성 가능</td>
+                      <td className="p-5 text-zinc-500 text-base italic keep-all">AI 연동 없이 작업 하거나 AI 연동 시 추천 등 제시 가능 *</td>
                     </tr>
                     <tr>
                       <td className="p-5 text-center font-bold text-zinc-400">3</td>
                       <td className="p-5 text-center font-bold text-zinc-900">품질</td>
                       <td className="p-5 font-bold text-zinc-900 keep-all">FiCA 코딩컨벤션 제공</td>
                       <td className="p-5 text-zinc-600 keep-all text-base">디자인 시스템에 따른 IBK 코딩 컨벤션을 최적화 설계 및 지침으로 제공</td>
-                      <td className="p-5 text-zinc-500 text-sm italic keep-all">자체 코딩컨벤션 기반 지침 이용한 퍼블리싱 자동화 업무 수준에서 진행중 (클로드 코드, 안티 그래비티) npm + ai API 기반 퍼블리싱 자동화 PoC 중</td>
+                      <td className="p-5 text-zinc-500 text-base italic keep-all">자체 코딩컨벤션 기반 지침 이용한 퍼블리싱 자동화 업무 수준에서 진행중 (클로드 코드, 안티 그래비티) npm + ai API 기반 퍼블리싱 자동화 PoC 중</td>
                     </tr>
                     <tr>
                       <td className="p-5 text-center font-bold text-zinc-400">4</td>
                       <td className="p-5 text-center font-bold text-zinc-900">품질</td>
                       <td className="p-5 font-bold text-zinc-900 keep-all">FiCA 웹접근성 지침 및 코드 가이드 제공</td>
                       <td className="p-5 text-zinc-600 keep-all text-base">FiCA 룰 베이스 변환 과정에서 특정 시스템에 사용되어야 하는 속성 가이드 제공</td>
-                      <td className="p-5 text-zinc-500 text-sm italic keep-all">자체 웹접근성 점검도구 및 크롤링 기반 웹접근성 점검 도구 보유중 (실무 도입 상태) 지침과 원칙 기반 (n8n + AI API 기반)</td>
+                      <td className="p-5 text-zinc-500 text-base italic keep-all">자체 웹접근성 점검도구 및 크롤링 기반 웹접근성 점검 도구 보유중 (실무 도입 상태) 지침과 원칙 기반 (n8n + AI API 기반)</td>
                     </tr>
                   </tbody>
                 </table>
@@ -804,174 +866,75 @@ const App: React.FC = () => {
             <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
           </div>
         </div>
-      </ParallaxSlide>
+      </ParallaxSlide >
 
-      {/* Slide 7: Introduction (Chapter 01) */}
-      <ParallaxSlide id="meaning">
-        <div className="flex flex-col h-full justify-center py-12">
-          <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
-            <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Rule-based Planning</span>
-            <span className="text-lg md:text-xl uppercase tracking-widest font-bold">Chapter 01</span>
-          </div>
-
-          <div className="flex flex-col gap-8">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight keep-all">
-              이 요구사항은<br />무엇을 의미하는가?
-            </h1>
-            <div className="p-8 bg-zinc-50 border-l-4 border-blue-600 space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <ChefHat className="text-blue-600" size={32} />
-                <h3 className="text-2xl font-bold">요리 레시피와 같습니다.</h3>
-              </div>
-              <p className="text-xl md:text-2xl font-light opacity-80 keep-all leading-normal">
-                "적당히 노릇하게 굽는다" 대신,<br />
-                <strong>"중불에서 3분간, 표면이 갈색(#964B00)이 될 때까지 굽는다"</strong>라고 명시하는 것.
-              </p>
-            </div>
-            <p className="text-lg text-zinc-600 keep-all">
-              기획서를 읽는 QA나 개발자가 "이 상황에서는 어떻게 작동하죠?"라고 질문할 필요가 없도록<br />
-              모든 경우의 수를 수식처럼 정의하라는 요구입니다.
-            </p>
-          </div>
-
-          <div className="flex justify-center mt-16 animate-bounce text-zinc-400">
-            <ArrowRight className="rotate-90" size={32} strokeWidth={1} />
-          </div>
-        </div>
-      </ParallaxSlide>
-
-      {/* Slide 8: Definition */}
+      {/* Slide 8: Rule-based Proposal */}
       <ParallaxSlide id="rulebased">
-        <SectionTitle subtitle="DEFINITION">룰 베이스(Rule-based) 기획서란?</SectionTitle>
+        <div className="text-zinc-500 font-bold mb-6 tracking-tight text-sm">[#별첨1]</div>
+        <SectionTitle subtitle="DEFINITION">룰 베이스(Rule-based) 기획(안)</SectionTitle>
         <div className="space-y-12">
           <p className="text-2xl font-medium keep-all">
-            기획서의 문장이 자연어(사람의 언어)가 아닌, <br />
-            <strong>논리적 조건과 결과의 집합</strong>으로 구성된 상태를 의미합니다.
+            기획서의 문장을<br />
+            <strong>논리적 조건과 결과의 집합</strong>으로 구성합니다
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-red-50 p-8 rounded-lg border border-red-100">
-              <div className="flex items-center gap-3 mb-4 text-red-600">
-                <XCircle />
-                <h4 className="font-bold text-xl">기존 방식 (모호함)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+            <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow bg-white">
+              <div className="text-base font-bold text-blue-600 mb-2 uppercase tracking-wider">01. If / Given</div>
+              <h3 className="text-2xl font-bold mb-3">조건</h3>
+              <p className="text-zinc-600 mb-4 text-base">행위가 일어나기 전의 시스템 상태</p>
+              <div className="bg-zinc-100 p-3 rounded text-base text-zinc-700">
+                ex) 사용자가 로그인을 완료하고, 계좌에 잔액이 100만 원 이상 있을 때
               </div>
-              <p className="text-xl text-zinc-700 italic">
-                "사용자가 버튼을 누르면 결제가 진행된다."
-              </p>
             </div>
 
-            <div className="bg-blue-50 p-8 rounded-lg border border-blue-100">
-              <div className="flex items-center gap-3 mb-4 text-blue-600">
-                <CheckCircle />
-                <h4 className="font-bold text-xl">룰 베이스 (명확함)</h4>
+            <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow bg-white">
+              <div className="text-base font-bold text-blue-600 mb-2 uppercase tracking-wider">02. When</div>
+              <h3 className="text-2xl font-bold mb-3">행위</h3>
+              <p className="text-zinc-600 mb-4 text-base">사용자나 시스템이 행하는 액션</p>
+              <div className="bg-zinc-100 p-3 rounded text-base text-zinc-700">
+                ex) 사용자가 [이체 실행] 버튼을 클릭했을 때
               </div>
-              <p className="text-xl text-zinc-700 leading-relaxed keep-all">
-                "사용자가 [결제] 버튼을 클릭했을 때,<br />
-                <span className="font-bold text-blue-800">1. '잔액' ≥ '결제 금액'이면</span> '결제 완료' 프로세스 실행<br />
-                <span className="font-bold text-blue-800">2. 그렇지 않으면</span> '잔액 부족' 팝업 노출"
-              </p>
+            </div>
+
+            <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow bg-white">
+              <div className="text-base font-bold text-blue-600 mb-2 uppercase tracking-wider">03. Then</div>
+              <h3 className="text-2xl font-bold mb-3">결과</h3>
+              <p className="text-zinc-600 mb-4 text-base">액션 이후에 변하는 상태</p>
+              <div className="bg-zinc-100 p-3 rounded text-base text-zinc-700">
+                ex) 이체 완료 팝업이 뜨고, 계좌 잔액이 즉시 차감되어 화면에 표시됨
+              </div>
+            </div>
+
+            <div className="border border-zinc-200 p-6 rounded-xl bg-red-50 border-red-100 hover:shadow-lg transition-shadow">
+              <div className="text-base font-bold text-red-600 mb-2 uppercase tracking-wider">04. Exception</div>
+              <h3 className="text-2xl font-bold mb-3 text-red-900">예외</h3>
+              <p className="text-red-700 mb-4 text-base">정상 흐름을 벗어난 모든 케이스</p>
+              <div className="bg-white p-3 rounded text-base text-red-800 border border-red-100">
+                ex) 이체 한도 초과, 인증 번호 5회 오류, 일시적 네트워크 장애 발생 시 등
+              </div>
             </div>
           </div>
         </div>
       </ParallaxSlide>
 
-      {/* Slide 9: 4 Elements (BDD) */}
-      <ParallaxSlide id="elements">
-        <SectionTitle subtitle="BDD ELEMENTS">기획서 필수 4요소</SectionTitle>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-
-          <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow">
-            <div className="text-sm font-bold text-blue-600 mb-2 uppercase tracking-wider">01. If / Given</div>
-            <h3 className="text-2xl font-bold mb-3">조건</h3>
-            <p className="text-zinc-600 mb-4">행위가 일어나기 전의 시스템 상태</p>
-            <div className="bg-zinc-100 p-3 rounded text-sm text-zinc-700">
-              Ex) 유료 멤버십 회원이면서, 쿠폰을 보유하고 있을 때
-            </div>
-          </div>
-
-          <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow">
-            <div className="text-sm font-bold text-blue-600 mb-2 uppercase tracking-wider">02. When</div>
-            <h3 className="text-2xl font-bold mb-3">행위</h3>
-            <p className="text-zinc-600 mb-4">사용자나 시스템이 행하는 액션</p>
-            <div className="bg-zinc-100 p-3 rounded text-sm text-zinc-700">
-              Ex) [쿠폰 적용] 버튼을 클릭했을 때
-            </div>
-          </div>
-
-          <div className="border border-zinc-200 p-6 rounded-xl hover:shadow-lg transition-shadow">
-            <div className="text-sm font-bold text-blue-600 mb-2 uppercase tracking-wider">03. Then</div>
-            <h3 className="text-2xl font-bold mb-3">결과</h3>
-            <p className="text-zinc-600 mb-4">액션 이후에 변하는 상태</p>
-            <div className="bg-zinc-100 p-3 rounded text-sm text-zinc-700">
-              Ex) 최종 결제 금액에서 10%가 차감되어 화면에 표시됨
-            </div>
-          </div>
-
-          <div className="border border-zinc-200 p-6 rounded-xl bg-red-50 border-red-100 hover:shadow-lg transition-shadow">
-            <div className="text-sm font-bold text-red-600 mb-2 uppercase tracking-wider">04. Exception</div>
-            <h3 className="text-2xl font-bold mb-3 text-red-900">예외</h3>
-            <p className="text-red-700 mb-4">정상 흐름을 벗어난 모든 케이스</p>
-            <div className="bg-white p-3 rounded text-sm text-red-800 border border-red-100">
-              Ex) 쿠폰 유효기간이 만료되었거나 이미 사용한 경우의 처리
-            </div>
-          </div>
-
-        </div>
-      </ParallaxSlide>
-
-      {/* Slide 10: Why? */}
-      <ParallaxSlide id="why">
-        <SectionTitle subtitle="WHY">왜 대형 IT 회사는 이것을 원하는가?</SectionTitle>
-        <ContentGrid>
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-12">
-
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <div className="bg-zinc-900 text-white p-4 rounded-full">
-                <Terminal size={32} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-3">1. QA 자동화 (Test Automation)</h3>
-                <p className="text-lg text-zinc-600 leading-relaxed keep-all">
-                  요즘 대기업은 사람이 일일이 버튼을 누르는 대신, 스크립트가 자동으로 테스트를 수행합니다.
-                  자동화 스크립트는 "기획자의 마음"을 읽을 수 없습니다. 오직 <strong>'Input A → Output B'</strong>라는 명확한 규칙이 있어야만 코드로 옮길 수 있습니다.
-                  룰 베이스 기획서는 그 자체로 <strong>자동화 시나리오의 설계도</strong>가 됩니다.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-8 items-start border-t border-zinc-200 pt-12">
-              <div className="bg-zinc-900 text-white p-4 rounded-full">
-                <Layers size={32} />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold mb-3">2. 조직 분업 및 병렬 작업</h3>
-                <p className="text-lg text-zinc-600 leading-relaxed keep-all">
-                  대규모 프로젝트에서는 기획이 끝나야 개발이 시작되고, 개발이 끝나야 QA가 시작되는 방식(Waterfall)을 쓰지 않습니다.
-                  기획서가 룰 베이스로 작성되면, <strong>개발자가 코드를 짜는 동시에 QA는 테스트 케이스를 미리 작성</strong>할 수 있습니다.
-                  즉, 기획서가 나오자마자 세 조직이 동시에 달릴 수 있는 "기준점"이 됩니다.
-                </p>
-              </div>
-            </div>
-
-          </div>
-        </ContentGrid>
-      </ParallaxSlide>
 
       {/* Slide 11: Examples */}
-      <ParallaxSlide id="examples" theme="dark">
-        <SectionTitle subtitle="EXAMPLE" theme="dark">예시로 보는 차이</SectionTitle>
+      <ParallaxSlide id="examples">
+        <div className="text-zinc-500 font-bold mb-6 tracking-tight text-sm">[#별첨2]</div>
+        <SectionTitle subtitle="EXAMPLE">룰 베이스 기획 예시</SectionTitle>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 w-full">
 
           {/* Bad Example */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2 text-red-400 font-bold text-xl">
-              <XCircle /> 잘못된 예시 (Vague Description)
+            <div className="flex items-center gap-2 text-red-600 font-bold text-xl">
+              <XCircle /> 전통적인 방식
             </div>
-            <div className="bg-zinc-800 p-8 rounded-lg border border-zinc-700 text-zinc-300 italic leading-relaxed">
+            <div className="bg-zinc-50 p-8 rounded-lg border border-zinc-200 text-zinc-600 italic leading-relaxed">
               "로그인 화면에서 아이디와 비밀번호를 입력하고 로그인 버튼을 누른다. 로그인에 성공하면 메인으로 이동하고, 실패하면 에러 메시지를 보여준다."
             </div>
-            <div className="pl-4 border-l-2 border-red-500 text-red-300 space-y-2">
+            <div className="pl-4 border-l-2 border-red-500 text-red-700 space-y-2">
               <p>QA: "아이디가 휴면 계정이면요?"</p>
               <p>QA: "비밀번호 5회 틀리면 어떻게 되나요?"</p>
               <p>QA: "에러 메시지 문구는 뭔가요?"</p>
@@ -980,12 +943,12 @@ const App: React.FC = () => {
 
           {/* Good Example */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2 text-green-400 font-bold text-xl">
-              <CheckCircle /> 룰 베이스 예시 (Rule-based)
+            <div className="flex items-center gap-2 text-green-600 font-bold text-xl">
+              <CheckCircle /> 룰 베이스 방식 예시 (Rule-based)
             </div>
-            <div className="overflow-x-auto bg-zinc-900 rounded-lg border border-zinc-700">
-              <table className="w-full text-sm text-left text-zinc-300">
-                <thead className="text-xs uppercase bg-zinc-800 text-zinc-400">
+            <div className="overflow-x-auto bg-white rounded-lg border border-zinc-200">
+              <table className="w-full text-base text-left text-zinc-800">
+                <thead className="text-base uppercase bg-zinc-100 text-zinc-500">
                   <tr>
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">조건 (If)</th>
@@ -993,80 +956,63 @@ const App: React.FC = () => {
                     <th className="px-4 py-3">결과 (Then)</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-700">
-                  <tr className="bg-zinc-900/50">
+                <tbody className="divide-y divide-zinc-200">
+                  <tr className="bg-white">
                     <td className="px-4 py-3 text-zinc-500">R-01</td>
                     <td className="px-4 py-3">유효한 ID/PW</td>
-                    <td className="px-4 py-3 font-bold text-white">[로그인] 클릭</td>
-                    <td className="px-4 py-3 text-green-400">'성공' 토스트 노출 후 /main 이동</td>
+                    <td className="px-4 py-3 font-bold text-zinc-900">[로그인] 클릭</td>
+                    <td className="px-4 py-3 text-green-600">'성공' 토스트 노출 후 main 이동</td>
                   </tr>
-                  <tr className="bg-zinc-900/50">
+                  <tr className="bg-zinc-50/50">
                     <td className="px-4 py-3 text-zinc-500">R-02</td>
                     <td className="px-4 py-3">PW 5회 미만 불일치</td>
-                    <td className="px-4 py-3 font-bold text-white">[로그인] 클릭</td>
+                    <td className="px-4 py-3 font-bold text-zinc-900">[로그인] 클릭</td>
                     <td className="px-4 py-3">"비밀번호 불일치(N/5)" 메시지 노출</td>
                   </tr>
-                  <tr className="bg-zinc-900/50">
+                  <tr className="bg-white">
                     <td className="px-4 py-3 text-zinc-500">R-03</td>
                     <td className="px-4 py-3">PW 5회 이상 불일치</td>
-                    <td className="px-4 py-3 font-bold text-white">[로그인] 클릭</td>
-                    <td className="px-4 py-3 text-red-400">계정 잠금 및 'PW 재설정' 팝업</td>
+                    <td className="px-4 py-3 font-bold text-zinc-900">[로그인] 클릭</td>
+                    <td className="px-4 py-3 text-red-600">계정 잠금 및 'PW 재설정' 팝업</td>
                   </tr>
-                  <tr className="bg-zinc-900/50">
+                  <tr className="bg-zinc-50/50">
                     <td className="px-4 py-3 text-zinc-500">R-04</td>
                     <td className="px-4 py-3">휴면 계정</td>
-                    <td className="px-4 py-3 font-bold text-white">[로그인] 클릭</td>
+                    <td className="px-4 py-3 font-bold text-zinc-900">[로그인] 클릭</td>
                     <td className="px-4 py-3">본인인증 페이지 이동</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-
         </div>
       </ParallaxSlide>
 
-      {/* Slide 12: Checklist */}
-      <ParallaxSlide id="checklist">
-        <SectionTitle subtitle="CHECKLIST">기획서 작성 체크리스트</SectionTitle>
-        <div className="w-full max-w-4xl space-y-6">
-          {[
-            "모든 문장에 '누가(주체)', '언제(조건)', '무엇을(대상)', '어떻게(결과)'가 포함되어 있는가?",
-            "'적절히', '화려하게', '친절하게' 같은 형용사를 모두 제거했는가?",
-            "한 문장에 하나의 규칙(One Rule per Sentence)만 담겨 있는가?",
-            "발생할 수 있는 모든 에러 상황(네트워크 끊김, 데이터 없음, 권한 없음 등)에 대한 결과값이 정의되었는가?",
-            "특정 조건에 따라 화면이 변한다면, 그 조건을 '상태 값(Status Code)' 단위로 구분했는가?"
-          ].map((item, i) => (
-            <div key={i} className="flex items-start gap-4 p-4 rounded-lg hover:bg-zinc-50 transition-colors">
-              <div className="mt-1 text-blue-600">
-                <ListChecks size={24} />
+      {/* Slide 12: Thank You */}
+      <ParallaxSlide id="thankyou">
+        <div className="flex flex-col h-full justify-center items-center text-center py-12">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8 }}
+            className="space-y-12"
+          >
+
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter leading-none keep-all mb-8">
+              감사합니다
+            </h1>
+            <div className="mt-20 pt-12 border-t border-zinc-100 flex flex-col items-center gap-6">
+              <div className="flex items-center gap-6">
+                <div className="text-xl font-black tracking-widest text-zinc-300">IBK</div>
+                <div className="w-px h-6 bg-zinc-200" />
+                <div className="text-xl font-black tracking-widest text-zinc-300">SDS</div>
+                <div className="w-px h-6 bg-zinc-200" />
+                <div className="text-xl font-black tracking-widest text-zinc-300">ETRIBE</div>
               </div>
-              <p className="text-xl text-zinc-800 font-medium keep-all">{item}</p>
             </div>
-          ))}
+          </motion.div>
         </div>
       </ParallaxSlide>
-
-      {/* Slide 13: Conclusion */}
-      <ParallaxSlide id="conclusion">
-        <SectionTitle subtitle="CONCLUSION">결론: 기획자의 역할 확장</SectionTitle>
-        <div className="flex flex-col items-center text-center max-w-3xl space-y-10">
-          <div className="p-6 bg-zinc-100 rounded-full">
-            <BrainCircuit size={48} className="text-zinc-800" strokeWidth={1.5} />
-          </div>
-
-          <h3 className="text-3xl md:text-5xl font-bold leading-tight keep-all">
-            '화면 설계자'를 넘어<br />
-            <span className="text-blue-600">'시스템 설계자'</span>가 되십시오.
-          </h3>
-
-          <p className="text-xl text-zinc-600 leading-relaxed keep-all">
-            과거의 기획자가 "사용자가 보기에 예쁘고 편한 화면"을 고민했다면,
-            룰 베이스를 요구받는 기획자는 <strong>시스템의 전체 로직(Business Logic)을 설계하고 통제하는 역할</strong>을 수행해야 합니다.
-          </p>
-        </div>
-      </ParallaxSlide>
-
     </div>
   );
 };
