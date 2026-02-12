@@ -41,26 +41,27 @@ import {
 } from 'lucide-react';
 import { motion, useScroll, useSpring } from 'framer-motion';
 
-const TimelineItem = ({ label, start, end, color }: { label: string, start: number, end: number, color: string }) => {
-  // Grid for M0 to M10 (11 points, 10 gaps)
-  const left = `${(start / 10) * 100}%`;
-  const width = `${((end - start) / 10) * 100}%`;
+const MilestonePin = ({ label, m, category, side }: { label: string, m: number, category: 'cx' | 'design' | 'qc', side: 'top' | 'bottom' }) => {
+  const colors = {
+    cx: 'bg-blue-600',
+    design: 'bg-indigo-600',
+    qc: 'bg-zinc-600'
+  };
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 group">
-      <div className="w-full md:w-64 text-base font-bold text-zinc-700 shrink-0 group-hover:text-blue-600 transition-colors">
-        {label}
+    <motion.div
+      initial={{ opacity: 0, y: side === 'top' ? 20 : -20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: m * 0.1 }}
+      className={`absolute flex flex-col items-center group`}
+      style={{ left: `${(m / 10) * 100}%`, transform: 'translateX(-50%)', [side === 'top' ? 'bottom' : 'top']: '24px' }}
+    >
+      <div className={`p-3 bg-white border-2 border-zinc-200 rounded-2xl shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all max-w-[160px] text-center mb-2 z-20`}>
+        <span className="text-xs font-bold text-zinc-800 leading-tight keep-all block">{label}</span>
       </div>
-      <div className="relative flex-grow h-4 md:h-8 bg-zinc-200/50 rounded-full overflow-hidden border border-zinc-100 shadow-inner">
-        <motion.div
-          initial={{ width: 0 }}
-          whileInView={{ width: width }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-          className={`absolute h-full ${color} rounded-full shadow-lg shadow-black/5`}
-          style={{ left }}
-        />
-      </div>
-    </div>
+      <div className={`w-3 h-3 rounded-full ${colors[category]} border-2 border-white shadow-sm relative z-30`} />
+      <div className={`w-0.5 h-6 bg-zinc-200 group-hover:bg-blue-200 transition-colors absolute ${side === 'top' ? 'top-full mt-[-6px]' : 'bottom-full mb-[-6px]'}`} />
+    </motion.div>
   );
 };
 
@@ -72,6 +73,30 @@ const App: React.FC = () => {
     restDelta: 0.001
   });
 
+  const navItems = [
+    { id: 'vision', label: '1. 사업 이해' },
+    { id: 'roles', label: '2. 역할 및 범위' },
+    { id: 'timeline', label: '2.4 참여 범위 요약' },
+    { id: 'experience', label: '3. 유사 경험' },
+    { id: 'collaboration', label: '4. 협업 방안' },
+    { id: 'process', label: '4.2 협업 프로세스' },
+    { id: 'requests', label: '5. 제언/요청사항' },
+    { id: 'meaning', label: '요구사항 의미' },
+    { id: 'rulebased', label: '룰 베이스란?' },
+    { id: 'elements', label: '필수 4요소' },
+    { id: 'why', label: '작성 이유' },
+    { id: 'examples', label: '예시 비교' },
+    { id: 'checklist', label: '체크리스트' },
+    { id: 'conclusion', label: '결론' },
+  ];
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="relative text-zinc-900 text-lg leading-relaxed">
       {/* Progress Bar */}
@@ -80,8 +105,24 @@ const App: React.FC = () => {
         style={{ scaleX }}
       />
 
+      {/* LNB */}
+      <nav className="fixed left-6 top-1/2 -translate-y-1/2 z-40 hidden xl:flex flex-col gap-3 p-4 bg-zinc-900/5 backdrop-blur-sm rounded-2xl border border-zinc-200/50">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => scrollToSection(item.id)}
+            className="group flex items-center gap-3 text-left transition-all"
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-zinc-400 group-hover:bg-blue-600 group-hover:scale-150 transition-all" />
+            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-tighter group-hover:text-zinc-900 transition-all whitespace-nowrap">
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </nav>
+
       {/* Slide 0: 1. Project Understanding */}
-      <ParallaxSlide isFirst={true}>
+      <ParallaxSlide id="vision" isFirst={true}>
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">IBK Project Vision</span>
@@ -144,7 +185,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 1: 2. Roles and Scope */}
-      <ParallaxSlide>
+      <ParallaxSlide id="roles">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Scope of Work</span>
@@ -185,11 +226,6 @@ const App: React.FC = () => {
                       <td className="p-4 font-semibold text-zinc-800">화면 정의서 작성</td>
                       <td className="p-4 text-zinc-600 keep-all">AI Pro SDD 입력 규격에 맞는 화면 정의서 작성<br />기존 화면 설계 외에 인수 조건(AC) 및 테스트 케이스 자연어 포함</td>
                       <td className="p-4 text-zinc-500 text-sm">SDS AI Pro 팀과 사전 협의 필요</td>
-                    </tr>
-                    <tr>
-                      <td className="p-4 font-semibold text-zinc-800">사용자 여정 적용</td>
-                      <td className="p-4 text-zinc-600 keep-all">화면 정의 시 기능 명세를 넘어, 사용자 여정의 목적과 비즈니스 로직이 포함된<br />인수 조건(AC)을 자연어로 기술</td>
-                      <td className="p-4"></td>
                     </tr>
                   </tbody>
                 </table>
@@ -274,7 +310,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 2: 2.4 Participation Scope Summary */}
-      <ParallaxSlide>
+      <ParallaxSlide id="timeline">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Timeline</span>
@@ -285,82 +321,73 @@ const App: React.FC = () => {
             2.4 참여 범위 요약
           </h1>
 
-          <div className="relative w-full max-w-5xl mx-auto mt-6 p-8 md:p-12 bg-zinc-50 rounded-3xl border border-zinc-200 shadow-xl overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-              <CalendarDays size={200} />
+          <div className="relative w-full max-w-6xl mx-auto mt-12 mb-20">
+            {/* Background Phase Lines */}
+            {[2, 4, 6, 8].map((m) => (
+              <div
+                key={m}
+                className="absolute top-0 bottom-0 border-l-2 border-dashed border-zinc-200 z-0 h-[400px]"
+                style={{ left: `${(m / 10) * 100}%` }}
+              >
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] font-black tracking-widest text-zinc-300 whitespace-nowrap">PHASE TRANSITION</span>
+              </div>
+            ))}
+
+            {/* Central Axis Arrow */}
+            <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-1.5 bg-zinc-200 rounded-full z-10 overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: '100%' }}
+                transition={{ duration: 1.5, ease: "easeInOut" }}
+                className="h-full bg-blue-600"
+              />
+              <div className="absolute top-0 right-0 w-4 h-4 bg-blue-600 rotate-45 -translate-y-[6px] translate-x-[8px]" />
             </div>
 
-            <div className="flex mb-10 px-1 font-mono text-sm md:text-base font-bold text-zinc-400 border-b border-zinc-200 pb-4">
-              <div className="hidden md:block w-64 shrink-0 mr-6"></div>
-              <div className="flex-grow flex justify-between">
-                <span className="text-zinc-900">M0</span>
-                <span>M1</span>
-                <span>M2</span>
-                <span>M3</span>
-                <span>M4</span>
-                <span>M5</span>
-                <span className="text-blue-600">M6</span>
-                <span>M7</span>
-                <span>M8</span>
-                <span>M9</span>
-                <span className="text-blue-600">M10</span>
-              </div>
+            {/* Month Marks */}
+            <div className="absolute top-1/2 left-0 right-0 translate-y-4 flex justify-between px-0 z-20 font-mono text-xs font-bold text-zinc-400">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((m) => (
+                <div key={m} className={`flex flex-col items-center`}>
+                  <div className={`w-1 h-3 ${m % 2 === 0 ? 'bg-zinc-300' : 'bg-zinc-200'} mb-1`} />
+                  <span>M{m}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="space-y-6 relative z-10 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-              <div className="pb-6 border-b border-zinc-100">
-                <TimelineItem label="PoC" start={0} end={1} color="bg-zinc-400" />
-              </div>
+            {/* Content Area */}
+            <div className="relative h-[400px] w-full">
+              {/* Top Side: CX Planning & QC Shifted */}
+              <MilestonePin m={0.5} label="PoC 수행" category="cx" side="top" />
+              <MilestonePin m={1.5} label="컴포넌트 식별/분석" category="cx" side="top" />
+              <MilestonePin m={3.5} label="화면 정의서(AC)" category="cx" side="top" />
+              <MilestonePin m={5.5} label="유저 저니 적용" category="cx" side="top" />
+              <MilestonePin m={7.5} label="주요 화면 기획" category="cx" side="top" />
+              <MilestonePin m={9.5} label="시나리오 테스트" category="cx" side="top" />
 
-              <div className="space-y-3 pt-4">
-                <div className="flex items-center gap-2 mb-2 text-blue-600 font-black uppercase tracking-widest text-sm">
-                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                  2.1 CX 기획
-                </div>
-                <TimelineItem label="분석/컴포넌트 식별 및 시나리오 작성" start={1} end={2} color="bg-blue-200" />
-                <TimelineItem label="화면 정의서(AC) 및 SDD 입력 규격화" start={3} end={4} color="bg-blue-300" />
-                <TimelineItem label="유저 저니 최적화 및 AI 지침 적용" start={5} end={6} color="bg-blue-400" />
-                <TimelineItem label="글로벌 주요 화면 기획 (시스템 활용)" start={7} end={8} color="bg-blue-500" />
-                <TimelineItem label="글로벌 서비스 검증 및 시나리오 테스트" start={9} end={10} color="bg-blue-600" />
-              </div>
+              <MilestonePin m={2} label="QA 기준 수립" category="qc" side="top" />
+              <MilestonePin m={4} label="코드 현행화" category="qc" side="top" />
+              <MilestonePin m={6} label="사용자 테스트" category="qc" side="top" />
+              <MilestonePin m={8} label="코드 정밀 검증" category="qc" side="top" />
+              <MilestonePin m={10} label="통합 품질 완료" category="qc" side="top" />
 
-              <div className="space-y-3 pt-4 border-t border-zinc-100">
-                <div className="flex items-center gap-2 mb-2 text-indigo-600 font-black uppercase tracking-widest text-sm">
-                  <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
-                  2.2 디자인 시스템
-                </div>
-                <TimelineItem label="토큰 설계 및 파운데이션 수립" start={1} end={2} color="bg-indigo-200" />
-                <TimelineItem label="베리언트/Figma 구축 및 라이브러리" start={3} end={4} color="bg-indigo-300" />
-                <TimelineItem label="CX 디자인 적용 및 표준화 완료" start={5} end={6} color="bg-indigo-400" />
-                <TimelineItem label="글로벌 확장 UI 지원 및 유지보수" start={7} end={8} color="bg-indigo-500" />
-                <TimelineItem label="시스템 디자인 가이드 최종 고도화" start={9} end={10} color="bg-indigo-600" />
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-zinc-100">
-                <div className="flex items-center gap-2 mb-2 text-zinc-600 font-black uppercase tracking-widest text-sm">
-                  <div className="w-3 h-3 rounded-full bg-zinc-600"></div>
-                  2.3 검증 및 품질
-                </div>
-                <TimelineItem label="QA 기준 수립 및 FiCA 가이드 검토" start={1} end={2} color="bg-zinc-200" />
-                <TimelineItem label="코드 현행화 시작 및 수정/업데이트" start={3} end={4} color="bg-zinc-300" />
-                <TimelineItem label="사용자 테스트 및 결과 리포트(LLM)" start={5} end={6} color="bg-zinc-400" />
-                <TimelineItem label="퍼블리싱 코드 정밀 검증 및 피드백" start={7} end={8} color="bg-zinc-500" />
-                <TimelineItem label="글로벌 통합 QA 및 최종 레포트 생성" start={9} end={10} color="bg-zinc-600" />
-              </div>
+              {/* Bottom Side: Design System */}
+              <MilestonePin m={1.5} label="토큰/파운데이션" category="design" side="bottom" />
+              <MilestonePin m={3.5} label="베리언트/Figma" category="design" side="bottom" />
+              <MilestonePin m={5.5} label="표준 디자인 완성" category="design" side="bottom" />
+              <MilestonePin m={7.5} label="글로벌 UI 확장" category="design" side="bottom" />
+              <MilestonePin m={9.5} label="가이드 최종 고도화" category="design" side="bottom" />
             </div>
 
-            <div className="mt-12 flex gap-8 text-sm text-zinc-500 border-t border-zinc-100 pt-6">
+            {/* Legend */}
+            <div className="mt-8 flex justify-center gap-12 text-sm font-bold opacity-60">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                2.1 CX 기획
+                <div className="w-3 h-3 rounded-full bg-blue-600" /> CX 기획
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-indigo-600"></div>
-                2.2 디자인 시스템
+                <div className="w-3 h-3 rounded-full bg-indigo-600" /> 디자인 시스템
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-zinc-600"></div>
-                2.3 검증 및 품질
+                <div className="w-3 h-3 rounded-full bg-zinc-600" /> 검증 및 품질
               </div>
             </div>
           </div>
@@ -372,7 +399,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 3: 3. Similar Experience */}
-      <ParallaxSlide>
+      <ParallaxSlide id="experience">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Experience & Track Record</span>
@@ -432,7 +459,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 4: 4. SDS Collaboration Plan (4.1) */}
-      <ParallaxSlide>
+      <ParallaxSlide id="collaboration">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Collaboration Strategy</span>
@@ -538,7 +565,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 5: 4.2 Collaboration Process */}
-      <ParallaxSlide>
+      <ParallaxSlide id="process">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Roadmap</span>
@@ -657,7 +684,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 6: 5. Suggestions and Requirements (NEW LOCATION) */}
-      <ParallaxSlide>
+      <ParallaxSlide id="requests">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Strategic Requests</span>
@@ -780,7 +807,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 7: Introduction (Chapter 01) */}
-      <ParallaxSlide>
+      <ParallaxSlide id="meaning">
         <div className="flex flex-col h-full justify-center py-12">
           <div className="flex justify-between items-start border-b border-zinc-900 pb-6 mb-10">
             <span className="text-lg md:text-xl uppercase tracking-widest font-bold text-blue-600">Rule-based Planning</span>
@@ -814,7 +841,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 8: Definition */}
-      <ParallaxSlide>
+      <ParallaxSlide id="rulebased">
         <SectionTitle subtitle="DEFINITION">룰 베이스(Rule-based) 기획서란?</SectionTitle>
         <div className="space-y-12">
           <p className="text-2xl font-medium keep-all">
@@ -849,7 +876,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 9: 4 Elements (BDD) */}
-      <ParallaxSlide>
+      <ParallaxSlide id="elements">
         <SectionTitle subtitle="BDD ELEMENTS">기획서 필수 4요소</SectionTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
 
@@ -893,7 +920,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 10: Why? */}
-      <ParallaxSlide>
+      <ParallaxSlide id="why">
         <SectionTitle subtitle="WHY">왜 대형 IT 회사는 이것을 원하는가?</SectionTitle>
         <ContentGrid>
           <div className="col-span-1 md:col-span-2 lg:col-span-3 space-y-12">
@@ -931,7 +958,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 11: Examples */}
-      <ParallaxSlide theme="dark">
+      <ParallaxSlide id="examples" theme="dark">
         <SectionTitle subtitle="EXAMPLE" theme="dark">예시로 보는 차이</SectionTitle>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 w-full">
@@ -1000,7 +1027,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 12: Checklist */}
-      <ParallaxSlide>
+      <ParallaxSlide id="checklist">
         <SectionTitle subtitle="CHECKLIST">기획서 작성 체크리스트</SectionTitle>
         <div className="w-full max-w-4xl space-y-6">
           {[
@@ -1021,7 +1048,7 @@ const App: React.FC = () => {
       </ParallaxSlide>
 
       {/* Slide 13: Conclusion */}
-      <ParallaxSlide>
+      <ParallaxSlide id="conclusion">
         <SectionTitle subtitle="CONCLUSION">결론: 기획자의 역할 확장</SectionTitle>
         <div className="flex flex-col items-center text-center max-w-3xl space-y-10">
           <div className="p-6 bg-zinc-100 rounded-full">

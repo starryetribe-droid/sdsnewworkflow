@@ -6,16 +6,18 @@ interface ParallaxSlideProps {
   className?: string;
   theme?: 'light' | 'dark';
   isFirst?: boolean;
+  id?: string;
 }
 
-export const ParallaxSlide: React.FC<ParallaxSlideProps> = ({ 
-  children, 
-  className = "", 
+export const ParallaxSlide: React.FC<ParallaxSlideProps> = ({
+  children,
+  className = "",
   theme = 'light',
-  isFirst = false
+  isFirst = false,
+  id
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // This hook tracks the scroll progress of the container relative to the viewport
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -24,18 +26,18 @@ export const ParallaxSlide: React.FC<ParallaxSlideProps> = ({
 
   // Create a subtle parallax effect for content inside
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
-  
+
   // Opacity and Scale: If it's the first section, force it to be visible immediately.
   // Otherwise, use the scroll-based transform.
   const opacity = useTransform(
-    scrollYProgress, 
-    isFirst ? [0, 0, 1] : [0, 0.2, 1], 
-    [1, 1, 1] 
+    scrollYProgress,
+    isFirst ? [0, 0, 1] : [0, 0.2, 1],
+    [1, 1, 1]
   );
-  
+
   const scale = useTransform(
-    scrollYProgress, 
-    isFirst ? [0, 0, 1] : [0, 0.2, 1], 
+    scrollYProgress,
+    isFirst ? [0, 0, 1] : [0, 0.2, 1],
     [1, 1, 1]
   );
 
@@ -49,8 +51,8 @@ export const ParallaxSlide: React.FC<ParallaxSlideProps> = ({
   const borderColor = theme === 'dark' ? 'border-zinc-800' : 'border-zinc-200';
 
   return (
-    <div ref={containerRef} className={`relative min-h-screen w-full flex flex-col items-center justify-center p-8 md:p-16 overflow-hidden ${bgColor} ${borderColor} border-b snap-start snap-always`}>
-      <motion.div 
+    <div id={id} ref={containerRef} className={`relative min-h-screen w-full flex flex-col items-center justify-center p-8 md:p-16 overflow-hidden ${bgColor} ${borderColor} border-b snap-start snap-always`}>
+      <motion.div
         style={{ y: dynamicY, scale: dynamicScale, opacity: dynamicOpacity }}
         className={`w-full max-w-[1440px] h-full flex flex-col justify-center ${className}`}
       >
@@ -60,10 +62,10 @@ export const ParallaxSlide: React.FC<ParallaxSlideProps> = ({
   );
 };
 
-export const SectionTitle: React.FC<{ children: React.ReactNode, subtitle?: string, theme?: 'light'|'dark' }> = ({ children, subtitle, theme = 'light' }) => (
+export const SectionTitle: React.FC<{ children: React.ReactNode, subtitle?: string, theme?: 'light' | 'dark' }> = ({ children, subtitle, theme = 'light' }) => (
   <div className="mb-16 border-l-2 border-current pl-8">
     {subtitle && (
-      <motion.p 
+      <motion.p
         initial={{ opacity: 0, x: -20 }}
         whileInView={{ opacity: 0.6, x: 0 }}
         transition={{ duration: 0.6 }}
@@ -72,7 +74,7 @@ export const SectionTitle: React.FC<{ children: React.ReactNode, subtitle?: stri
         {subtitle}
       </motion.p>
     )}
-    <motion.h2 
+    <motion.h2
       initial={{ opacity: 0, x: -20 }}
       whileInView={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.6, delay: 0.1 }}
@@ -89,11 +91,11 @@ export const ContentGrid: React.FC<{ children: React.ReactNode }> = ({ children 
   </div>
 );
 
-export const Card: React.FC<{ title: string; children: React.ReactNode; index?: number; theme?: 'light'|'dark' }> = ({ title, children, index = 0, theme = 'light' }) => {
+export const Card: React.FC<{ title: string; children: React.ReactNode; index?: number; theme?: 'light' | 'dark' }> = ({ title, children, index = 0, theme = 'light' }) => {
   const borderColor = theme === 'dark' ? 'border-zinc-700' : 'border-black';
-  
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
